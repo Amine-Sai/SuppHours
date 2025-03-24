@@ -9,18 +9,20 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('days', function (Blueprint $table) {
+        Schema::create('subjects', function (Blueprint $table) {
             $table->id();
-            $table->json('hours');
-            $table->foreignId('time_table_id')->constrained('time_tables')->onDelete('cascade');
+            $table->string(name);
             $table->timestamps();
         });
     }
-    
-    public function down()
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        Schema::dropIfExists('days');
+        Schema::dropIfExists('subjects');
     }
 };

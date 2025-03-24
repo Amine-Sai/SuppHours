@@ -11,12 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        schema::create('time_tables',function (Blueprint $table) {
+        Schema::create('lectures', function (Blueprint $table) {
             $table->id();
-            $table->json('days');
-            $table->date('startDate');
+            $table->floatval('start');
+            $table->floatval('end');
+            $table->string('subject_id');
+            $table->enum('type',['cours', 'td', 'tp', 'supp']); 
+            $table->enum('state', ['intern', 'extern']);
+            $table->enum('day', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
             $table->foreignId('teacher_id')->constrained()->onDelete('cascade');
         });
+
     }
 
     /**
@@ -24,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        schema::dropIfExists('time_tables');
+        Schema::dropIfExists('lectures');
     }
 };
