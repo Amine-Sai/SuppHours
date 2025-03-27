@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('lectures', function (Blueprint $table) {
             $table->id();
-            $table->floatval('start');
-            $table->floatval('end');
+            $table->time('start');
+            $table->time('end');
             $table->string('subject_id');
             $table->enum('type',['cours', 'td', 'tp', 'supp']); 
             $table->enum('state', ['intern', 'extern']);

@@ -4,9 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class TimeTable extends Model
+class lecture extends Model
 {
     protected $fillable=['start', 'end','teacher_id', 'subject_id', 'day', 'state', 'type'];
+
     public function teacher(){
         return $this->belongsTo(Teacher::class);
     }
