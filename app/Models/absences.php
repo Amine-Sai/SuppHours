@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class absences extends Model
 {
-    protected $fillable=['teacher_id', 'justified','lecture_id'];
+    protected $fillable=['date', 'justified', 'teacher_id','lecture_id'];
     
 
 
