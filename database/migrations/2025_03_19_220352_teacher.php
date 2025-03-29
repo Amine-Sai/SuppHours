@@ -6,22 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         schema::create('teachers',function(Blueprint $table){
             $table->id();
             $table->string('fullName');
-            $table->json('grades');
+            $table->json('grades'); //update later (either split into another table or figure out something else)
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         schema::dropIfExists('teachers');
