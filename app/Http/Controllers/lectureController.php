@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class LectureController extends Controller
 {
-    public function showAll()
+    public function index()
     {
         return response()->json(Lecture::all());
     }
@@ -112,7 +112,7 @@ class LectureController extends Controller
         ]);
     }
 
-    public function create(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
             'start' => 'required|date_format:H:i',
@@ -151,7 +151,7 @@ class LectureController extends Controller
         return response()->json($lecture);
     }
 
-    public function delete(Lecture $lecture)
+    public function destroy(Lecture $lecture)
     {
         $lecture->delete();
         return response()->json(['message' => 'Lecture deleted successfully']);
