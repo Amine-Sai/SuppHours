@@ -123,8 +123,67 @@ class AbsenceController extends Controller
             }
         }
 
-        return response()->json([
-            'absences' => $teacher->absences
-        ]);
+        //new part
+
+        $lectureHistory = [];
+
+$current = $startPeriod->copy();
+$absences = Absence::where('teacher_id', $teacher->id)->exists();
+foreach ($absences as $absence) {
+while ($current->lte($endPeriod)) {
+    $dayName = $current->format('l');
+
+    // Get all lectures for that day
+    $lectures = $teacher->lectures()->where('day', $dayName)->get();
+
+    if ($absence->date!==$current||$absences->isEmpty()) { 
+        foreach ($lectures as $lecture) {
+         //ida makanch absent fnhar hadak wla khlaso les absence yzid sway3 t3 nhar hadak      
+           
+                
+                    $lectureHistory[] = [
+                        'date'       => $current->toDateString(),
+                        'day'        => $dayName,
+                        'lecture_id' => $lecture->id,
+                        'start'      => $lecture->start,
+                        'end'        => $lecture->end,
+                    ];
+                
+            }
+        
+    }else{
+
+        //ida kayna absence fnhar hadak y loop 3la lectures 
+        foreach ($lectures as $lecture) {
+            //test en cas absences khlaso 9bl la date hadik
+            if (!$absences->isEmpty()) {
+                if ($absence->lecture_id===lecture_id){
+                    $absences->shift();
+                }
+            }
+            else{
+            //ida mkanch absent yzidha
+                $lectureHistory[] = [
+                    'date'       => $current->toDateString(),
+                    'day'        => $dayName,
+                    'lecture_id' => $lecture->id,
+                    'start'      => $lecture->start,
+                    'end'        => $lecture->end,
+                ];
+            
+            }
+                 
+        }
+    }
+    
+
+    $current->addDay();
+}
+    }
+return response()->json([
+    'lectures' => $lectureHistory
+]);
+
+        
     }
 }

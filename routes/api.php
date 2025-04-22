@@ -9,18 +9,6 @@ use App\Http\Controllers\{
     AuthController
 };
 
-// Lectures
-
-
-// Teachers
-
-// Grades
-
-
-// Absences
-
-
-// Public routes
 Route::post('/login', [AuthController::class, 'login']);
 
 // Protected routes (requires authentication)
@@ -53,8 +41,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{teacher}', [TeacherController::class, 'destroy']);
         // ... other teacher routes
     });
-    Route::apiResource('periods', PeriodController::class);
-    Route::apiResource('periods', PeriodController::class);
+    Route::apiResource('period', PeriodController::class);
+    Route::apiResource('holidays', PeriodController::class);
 
     Route::prefix('lectures')->group(function () {
         Route::get('/', [LectureController::class, 'index']);
