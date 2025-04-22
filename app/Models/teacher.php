@@ -14,6 +14,16 @@ class Teacher extends Model
         return $this->hasMany(Grade::class);
     }
 
+    public function absences()
+    {
+        return $this->hasMany(absences::class);
+    }
+
+    public function lectures()
+{
+    return $this->hasMany(Lecture::class);
+}
+
     function timeTable(){
         return $this->hasMany(TimeTable::class);
     }

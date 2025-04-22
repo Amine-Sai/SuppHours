@@ -156,4 +156,12 @@ class LectureController extends Controller
         $lecture->delete();
         return response()->json(['message' => 'Lecture deleted successfully']);
     }
+
+    public function showTimeTable(Teacher $teacher)
+{
+    return response()->json([
+        'lectures' => $teacher->lectures
+    ]);
+}
+
 }
