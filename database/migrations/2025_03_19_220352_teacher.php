@@ -8,16 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        schema::create('teachers',function(Blueprint $table){
+        Schema::create('teachers', function(Blueprint $table) {
             $table->id();
             $table->string('fullName');
-            $table->json('grades'); //update later (either split into another table or figure out something else)
+            
+            // each object will contain: grade_id , start_date
+            $table->json('grades')->nullable();
+            
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        schema::dropIfExists('teachers');
+        Schema::dropIfExists('teachers');
     }
 };

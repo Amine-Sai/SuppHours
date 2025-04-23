@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Grade;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 
 class GradesController extends Controller
@@ -21,10 +22,8 @@ class GradesController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'value' => 'required|string',
-            'perHour' => 'required|numeric',
-            'startDate' => 'required|date',
-            'teacher_id' => 'required|exists:teachers,id',
+            'name' => 'required|string',
+            'value' => 'required|numeric',
         ]);
 
         $grade = Grade::create($validated);
@@ -45,10 +44,8 @@ class GradesController extends Controller
     public function update(Request $request, Grade $grade)
     {
         $validated = $request->validate([
-            'value' => 'sometimes|string',
-            'perHour' => 'sometimes|numeric',
-            'startDate' => 'sometimes|date',
-            'teacher_id' => 'sometimes|exists:teachers,id',
+            'name' => 'sometimes|string',
+            'value' => 'sometimes|numeric',
         ]);
 
         $grade->update($validated);
@@ -62,5 +59,113 @@ class GradesController extends Controller
     {
         $grade->delete();
         return response()->json(['message' => 'Grade deleted successfully']);
+    }
+    
+    /**
+     * Add a grade to a teacher
+     */
+    public function addGradeToTeacher(Request $request)
+    {
+        $validated = $request->validate([
+            'teacher_id' => 'required|exists:teachers,id',
+            'grade_id' => 'required|exists:grades,id',
+            'start_date' => 'required|date',
+        ]);
+        
+        $teacher = Teacher::findOrFail($validated['teacher_id']);
+        
+        // Get current grades
+        $grades = $teacher->grades ?? [];
+        if (is_string($grades)) {
+            $grades = json_decode($grades, true) ?? [];
+        }
+        
+        // Add new grade entry
+        $grades[] = [
+            'grade_id' => $validated['grade_id'],
+            'start_date' => $validated['start_date'],
+        ];
+        
+        // Sort by start_date (newest first)
+        usort($grades, function($a, $b) {
+            return strtotime($b['start_date']) - strtotime($a['start_date']);
+        });
+        
+        $teacher->grades = $grades;
+        $teacher->save();
+        
+        return response()->json($teacher);
+    }
+    
+    /**
+     * Get a teacher's grades history
+     */
+    public function getTeacherGrades(Teacher $teacher)
+    {
+        $grades = $teacher->grades ?? [];
+        if (is_string($grades)) {
+            $grades = json_decode($grades, true) ?? [];
+        }
+        
+        // Sort by start_date (newest first)
+        usort($grades, function($a, $b) {
+            return strtotime($b['start_date']) - strtotime($a['start_date']);
+        });
+        
+        return response()->json($grades);
+    }
+    
+    /**
+     * Get a teacher's current grade
+     */
+    public function getCurrentGrade(Teacher $teacher)
+    {
+        $grades = $teacher->grades ?? [];
+        if (is_string($grades)) {
+            $grades = json_decode($grades, true) ?? [];
+        }
+        
+        if (empty($grades)) {
+            return response()->json(null);
+        }
+        
+        // Sort by start_date (newest first)
+        usort($grades, function($a, $b) {
+            return strtotime($b['start_date']) - strtotime($a['start_date']);
+        });
+        
+        // Current grade is the most recent one
+        return response()->json($grades[0]);
+    }
+    
+    /**
+     * Remove a grade from a teacher
+     */
+    public function removeGradeFromTeacher(Request $request)
+    {
+        $validated = $request->validate([
+            'teacher_id' => 'required|exists:teachers,id',
+            'grade_id' => 'required|exists:grades,id',
+            'start_date' => 'required|date',
+        ]);
+        
+        $teacher = Teacher::findOrFail($validated['teacher_id']);
+        
+        // Get current grades
+        $grades = $teacher->grades ?? [];
+        if (is_string($grades)) {
+            $grades = json_decode($grades, true) ?? [];
+        }
+        
+        // Find and remove the specific grade entry
+        $filteredGrades = array_filter($grades, function($grade) use ($validated) {
+            return !($grade['grade_id'] == $validated['grade_id'] && 
+                    $grade['start_date'] == $validated['start_date']);
+        });
+        
+        $teacher->grades = array_values($filteredGrades); // Reset array keys
+        $teacher->save();
+        
+        return response()->json($teacher);
     }
 }
