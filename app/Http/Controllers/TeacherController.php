@@ -14,13 +14,12 @@ class TeacherController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $data=$request->validate([
             'fullName' => 'required|string|max:255',
-            'email' => 'required|email|unique:teacher,email',
-            'password' => 'required|string|min:8'
+            'email' => 'required|email|unique:teachers,email',
         ]);
         
-        $teacher = teacher::create($request->all());
+        $teacher = Teacher::create($data);
         return response()->json($teacher, 201);
     }
 
@@ -29,19 +28,30 @@ class TeacherController extends Controller
         return response()->json($teacher);
     }
 
-    public function update(Request $request, teacher $teacher)
+    public function update(Request $request, Teacher $teacher)
     {
-        $request->validate([
+        // Validate the incoming data, ensuring current email is excluded from uniqueness check
+        $data = $request->validate([
             'fullName' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:teachers,email,' . $teacher->id,
         ]);
-
-        $teacher->update($request->all());
-        return response()->json($teacher);
+    
+        // Update the teacher with validated data
+        $teacher->update($data);
+    
+        // Return the updated teacher as a JSON response
+        return response([
+            'message'=>'updated',
+            'teacher'=>$teacher
+        ]);
     }
-
+    
     public function destroy(teacher $teacher)
     {
         $teacher->delete();
-        return response()->json(null, 204);
+        return response([
+            'message'=>'deleted'
+        ]);
+        
     }
 }
