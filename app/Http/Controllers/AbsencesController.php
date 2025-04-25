@@ -9,7 +9,7 @@ use App\Models\Holidays;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
-class AbsenceController extends Controller
+class AbsencesController extends Controller
 {
     /**
      * Display a listing of the absences.

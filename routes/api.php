@@ -1,13 +1,14 @@
 <?php
 
-// routes/web.php
-use App\Http\Controllers\{
-    AbsencesController,
-    GradeController,
-    LectureController,
-    TeacherController,
-    AuthController
-};
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\absencesController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\LectureController;
+use App\Http\Controllers\PeriodController;
+
 
 Route::post('/login', [AuthController::class, 'login']);
 

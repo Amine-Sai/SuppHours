@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
-abstract class AuthController
+class AuthController extends Controller
+
 {
     public function login(Request $request)
     {
@@ -43,11 +44,11 @@ abstract class AuthController
 
         $user = User::create($data);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        //$token = $user->createToken('auth_token')->plainTextToken;
 
         return response([
             'user' => $user,
-            'token' => $token,
+            //'token' => $token,
         ], 201);
     }
 
@@ -62,4 +63,3 @@ abstract class AuthController
         ], 200);
     }
 }
-

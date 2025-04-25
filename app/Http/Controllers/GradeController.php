@@ -6,7 +6,7 @@ use App\Models\Grade;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
 
-class GradesController extends Controller
+class GradeController extends Controller
 {
     /**
      * Display a listing of the grades.
