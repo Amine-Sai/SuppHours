@@ -5,8 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\lecture;
 use Illuminate\Http\Request;
 
+
+
 class LectureController extends Controller
 {
+
+
+    // time overlap
+    use Carbon\Carbon;
+    private function timeRangesOverlap($start1, $end1, $start2, $end2): bool
+    {
+        return Carbon::parse($start1)->lt(Carbon::parse($end2)) && 
+               Carbon::parse($end1)->gt(Carbon::parse($start2));
+    }
+
+
     public function index()
     {
         return response()->json(Lecture::all());
@@ -112,23 +125,76 @@ class LectureController extends Controller
         ]);
     }
 
+
     public function store(Request $request)
     {
-        $data=$request->validate([
-            'start' => 'required|date_format:H:i',
-            'end' => 'required|date_format:H:i|after:start',
-            'duration' => 'required|numeric',
-            'subject_id' => 'required|string',
-            'type' => 'required|in:cours,td,tp,supp',
-            'state' => 'required|in:intern,extern',
-            'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+        $validated = $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
+            'lectures' => 'required|array|min:1',
+            'lectures.*.start' => 'required|date_format:H:i',
+            'lectures.*.end' => 'required|date_format:H:i|after:lectures.*.start',
+            'lectures.*.subject_id' => 'required|string',
+            'lectures.*.type' => 'required|in:cours,td,tp,supp',
+            'lectures.*.state' => 'required|in:intern,extern',
+            'lectures.*.day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
         ]);
-        //dd($data);
-        $lecture = Lecture::create($data);
-        
-        return response()->json($lecture, 201);
+    
+        $teacherId = $validated['teacher_id'];
+        $newLectures = $validated['lectures'];
+    
+        $existingLectures = Lecture::where('teacher_id', $teacherId)
+            ->get(['id', 'day', 'start', 'end', 'subject_id']);
+    
+        // check overlaps
+        foreach ($newLectures as $i => $lectureA) {
+            foreach ($newLectures as $j => $lectureB) {
+                if ($i >= $j) continue; 
+    
+                if ($lectureA['day'] === $lectureB['day'] && 
+                    $this->timeRangesOverlap(
+                        $lectureA['start'], $lectureA['end'],
+                        $lectureB['start'], $lectureB['end']
+                    )) {
+                    return response()->json([
+                        'message' => 'Conflict between new lectures',
+                        'conflicts' => [
+                            'lecture_1' => $lectureA,
+                            'lecture_2' => $lectureB
+                        ]
+                    ], 422);
+                }
+            }
+        }
+    
+        // existing  & new
+        foreach ($newLectures as $newLecture) {
+            foreach ($existingLectures as $existing) {
+                if ($newLecture['day'] === $existing->day && 
+                    $this->timeRangesOverlap(
+                        $newLecture['start'], $newLecture['end'],
+                        $existing->start, $existing->end
+                    )) {
+                    return response()->json([
+                        'message' => 'Lecture conflicts with existing schedule',
+                        'conflicts' => [
+                            'new_lecture' => $newLecture,
+                            'existing_lecture' => $existing
+                        ]
+                    ], 422);
+                }
+            }
+        }
+    
+        // Create all lectures if no conflicts
+        $createdLectures = [];
+        foreach ($newLectures as $lecture) {
+            $lecture['teacher_id'] = $teacherId; 
+            $createdLectures[] = Lecture::create($lecture);
+        }
+    
+        return response()->json($createdLectures, 201);
     }
+    
 
     public function show(Lecture $lecture)
     {
