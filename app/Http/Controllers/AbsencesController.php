@@ -25,25 +25,21 @@ class AbsencesController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'justified'   => 'required|boolean',
+            'justified'   => 'sometimes|boolean',
             'date'        => 'required|date',
             'teacher_id'  => 'required|exists:teachers,id',
             'lecture_id'  => 'required|exists:lectures,id',
         ]);
 
-        // Get the lecture to pull start/end times
-        $lecture = Lecture::findOrFail($request->lecture_id);
 
         $absence = Absence::create([
             'justified'   => $request->justified,
             'date'        => $request->date,
             'teacher_id'  => $request->teacher_id,
             'lecture_id'  => $request->lecture_id,
-            'start'       => $lecture->start,
-            'end'         => $lecture->end,
         ]);
 
-        return response()->json($absence, 201);
+        return response()->json($absence);
     }
 
     /**
@@ -57,22 +53,15 @@ class AbsencesController extends Controller
     /**
      * Update the specified absence.
      */
-    public function update(Request $request, Absence $absence)
+    public function update(Absence $absence, Request $request)
     {
         $request->validate([
+            'id' => 'required|exists:absences,id',
             'justified'   => 'sometimes|boolean',
             'date'        => 'sometimes|date',
             'teacher_id'  => 'sometimes|exists:teachers,id',
             'lecture_id'  => 'sometimes|exists:lectures,id',
         ]);
-
-        if ($request->has('lecture_id')) {
-            $lecture = Lecture::findOrFail($request->lecture_id);
-            $request->merge([
-                'start' => $lecture->start,
-                'end'   => $lecture->end
-            ]);
-        }
 
         $absence->update($request->all());
 

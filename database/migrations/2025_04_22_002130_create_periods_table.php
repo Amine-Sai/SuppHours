@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('periods', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('teacher_id')->constrained()->onDelete('cascade');  // Foreign key to teacher
-            $table->date('startDate');  // Start date of the period
-            $table->date('endDate');    // End date of the period
-            $table->timestamps();       // Timestamps for created_at and updated_at
+            $table->foreignId('teacher_id')->constrained()->onDelete('cascade');
+            $table->date('startDate');
+            $table->date('endDate');   
+            $table->timestamps();       
         });
     }
     

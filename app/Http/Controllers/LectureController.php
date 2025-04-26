@@ -6,11 +6,8 @@ use App\Models\lecture;
 use Illuminate\Http\Request;
 
 
-
 class LectureController extends Controller
 {
-
-
     // time overlap
     use Carbon\Carbon;
     private function timeRangesOverlap($start1, $end1, $start2, $end2): bool
@@ -19,11 +16,11 @@ class LectureController extends Controller
                Carbon::parse($end1)->gt(Carbon::parse($start2));
     }
 
-    use Carbon\Carbon;
-    private function calculateDuration($start, $end): floatval
+    //calc duration
+    private function calculateDuration($start, $end): float
         {
-        $start = Carbon::parse($lecture->start);
-        $end = Carbon::parse($lecture->end);
+        $start = Carbon::parse($start);
+        $end = Carbon::parse($end);
         return $start->diffInMinutes($end) / 60;
         }
 
@@ -33,119 +30,73 @@ class LectureController extends Controller
         return response()->json(Lecture::all());
     }
 
-    public function calculateAdditionalHours(Request $request)
-{
-    $validated = $request->validate([
-        'teacher_id' => 'required|exists:teachers,id',  
-    ]);
+    public function calculateAdditionalHours(Request $request){
+        $validated = $request->validate([
+            'teacher_id' => 'required|exists:teachers,id',  
+        ]);
 
-    $teacherId = $validated['teacher_id'];
+        $teacherId = $validated['teacher_id'];
+        $lectures = Lecture::where('teacher_id', $teacherId)->get();
 
-    // Fetch the teacher's lectures
-    $lectures = Lecture::where('teacher_id', $teacherId)->get();
+        // valeurs d sway3
+        $typeValues = [
+            'cours' => 1.5,
+            'td'    => 1,
+            'tp'    => 0.75,
+        ];
 
-    // Define the lecture type values and processing order
-    $typeValues = [
-        'cours' => 1.5,
-        'td' => 1,
-        'tp' => 0.75
-    ];
+        $totalHours = 0;
 
-    $totalHours = 0;
-    $supplementaryHours = 0;
-    $processedLectures = [];
+        // cours -> td -> tp
+        foreach (['cours', 'td', 'tp'] as $currentType) {
+            foreach ($lectures as $lecture) {
+                if ($lecture->type !== $currentType) {
+                    continue;
+                }
 
-    // Process lectures in the specified order: cours, td, tp
-    foreach (['cours', 'td', 'tp'] as $currentType) {
-        foreach ($lectures as $lecture) {
-            if ($lecture->type !== $currentType) {
-                continue;
-            }
+                $remainingDuration = $this->calculateDuration($lecture->start, $lecture->end);
 
-            // Calculate duration in hours
-            calculateDuration($lecture->start, $lecture->end);
+                while ($remainingDuration > 0) {
+                    $availableSpace = 9 - $totalHours;
 
-            $remainingDuration = $duration;
-
-            while ($remainingDuration > 0) {
-                $availableSpace = 9 - $totalHours;
-
-                if ($availableSpace <= 0) {
-                    // All remaining duration goes to supplementary
-                    $supplementaryHours += $remainingDuration;
-                    $processedLectures[] = [
-                        'original_lecture' => $lecture,
-                        'duration' => $remainingDuration,
-                        'type' => 'supp',
-                        'is_supplementary' => true
-                    ];
-                    $remainingDuration = 0;
-                } else {
-                    $typeValue = $typeValues[$currentType];
-                    $possibleDuration = min($remainingDuration, $availableSpace / $typeValue * $duration);
-
-                    if ($possibleDuration >= $remainingDuration) {
-                        // Entire duration fits
-                        $totalHours += $remainingDuration * $typeValue;
-                        $processedLectures[] = [
-                            'original_lecture' => $lecture,
-                            'duration' => $remainingDuration,
-                            'type' => $currentType,
-                            'is_supplementary' => false
-                        ];
+                    if ($availableSpace <= 0) {
+                        // all remaining duration goes to supplementary
+                        $lecture->type = "supp";
+                        $lecture->save();
                         $remainingDuration = 0;
                     } else {
-                        // Split the duration
-                        $totalHours += $possibleDuration * $typeValue;
-                        $processedLectures[] = [
-                            'original_lecture' => $lecture,
-                            'duration' => $possibleDuration,
-                            'type' => $currentType,
-                            'is_supplementary' => false
-                        ];
+                        $typeValue = $typeValues[$currentType];
+                        $valuexduration = $typeValue * $remainingDuration;
+                        $possibleDuration = min($availableSpace, $valuexduration);
 
-                        $remainingDuration -= $possibleDuration;
+                        if ($availableSpace >= $valuexduration) { // cond espace
+                            $totalHours += $valuexduration;
+                            $remainingDuration = 0;
+                        } else {
+                            // split the duration
+                            $firstSplitDuration = $availableSpace / $typeValue;
 
-                        // The rest goes to supplementary
-                        $supplementaryHours += $remainingDuration;
-                        $processedLectures[] = [
-                            'original_lecture' => $lecture,
-                            'duration' => $remainingDuration,
-                            'type' => 'supp',
-                            'is_supplementary' => true
-                        ];
-                        $remainingDuration = 0;
+                            $totalHours += $availableSpace;
+
+                            // split into 2 parts, bdel end ta3 lwla based on remaining time
+                            $newEnd = Carbon::parse($lecture->start)->addHours($firstSplitDuration);
+                            $lecture->end = $newEnd->format('H:i');
+                            $lecture->save();
+
+                            // nos 2eme ta3 sceance
+                            $secondHalf = $lecture->replicate();
+                            $secondHalf->start = $lecture->end;
+                            $secondHalf->end = $newEnd->addHours($remainingDuration - $firstSplitDuration)->format('H:i');
+                            $secondHalf->type = "supp";
+                            $secondHalf->save();
+
+                            $remainingDuration = 0;
+                        }
                     }
                 }
             }
         }
-    }
-
-    // Handle any lectures that aren't cours/td/tp (auto supp)
-    foreach ($lectures as $lecture) {
-        if (!in_array($lecture->type, ['cours', 'td', 'tp'])) {
-            $start = Carbon::parse($lecture->start);
-            $end = Carbon::parse($lecture->end);
-            $duration = $start->diffInMinutes($end) / 60;
-
-            $supplementaryHours += $duration;
-            $processedLectures[] = [
-                'original_lecture' => $lecture,
-                'duration' => $duration,
-                'type' => 'supp',
-                'is_supplementary' => true
-            ];
-        }
-    }
-
-    return response()->json([
-        'total_hours' => $totalHours,
-        'supplementary_hours' => $supplementaryHours,
-        'processed_lectures' => $processedLectures,
-        'message' => 'Calculation completed successfully'
-    ]);
 }
-
 
 
     public function store(Request $request)

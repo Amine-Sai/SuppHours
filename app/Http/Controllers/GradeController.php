@@ -8,17 +8,13 @@ use Illuminate\Http\Request;
 
 class GradeController extends Controller
 {
-    /**
-     * Display a listing of the grades.
-     */
+    
     public function index()
     {
         return response()->json(Grade::all());
     }
 
-    /**
-     * Store a newly created grade.
-     */
+    
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -117,9 +113,7 @@ class GradeController extends Controller
         return response(["grades" => $grades]);
     }
     
-    /**
-     * Remove a grade from a teacher
-     */
+
     public function removeGradeFromTeacher(Request $request)
     {
         $validated = $request->validate([
@@ -130,13 +124,11 @@ class GradeController extends Controller
         
         $teacher = Teacher::findOrFail($validated['teacher_id']);
         
-        // Get current grades
         $grades = $teacher->grades ?? [];
         if (is_string($grades)) {
             $grades = json_decode($grades, true) ?? [];
         }
         
-        // Find and remove the specific grade entry
         $filteredGrades = array_filter($grades, function($grade) use ($validated) {
             return !($grade['grade_id'] == $validated['grade_id'] && 
                     $grade['start_date'] == $validated['start_date']);

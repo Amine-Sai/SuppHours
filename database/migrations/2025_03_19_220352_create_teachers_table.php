@@ -15,7 +15,6 @@ return new class extends Migration
             
             // each object will contain: grade_id , start_date
             $table->json('grades')->nullable();
-            
             $table->timestamps();
         });
     }
