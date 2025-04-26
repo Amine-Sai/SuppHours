@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->time('start');
             $table->time('end');
-            $table->float('duration');
             $table->string('subject_id');
             $table->enum('type',['cours', 'td', 'tp', 'supp']); 
             $table->enum('state', ['intern', 'extern']);

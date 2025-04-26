@@ -143,7 +143,7 @@ class LectureController extends Controller
         $newLectures = $validated['lectures'];
     
         $existingLectures = Lecture::where('teacher_id', $teacherId)
-            ->get(['id', 'day', 'start', 'end', 'subject_id']);
+            ->get(['id', 'day', 'start', 'end']);
     
         // check overlaps
         foreach ($newLectures as $i => $lectureA) {
@@ -202,22 +202,52 @@ class LectureController extends Controller
     }
 
     public function update(Request $request, Lecture $lecture)
-    {
-        $request->validate([
-            'start' => 'sometimes|date_format:H:i',
-            'end' => 'sometimes|date_format:H:i|after:start',
-            'duration' => 'sometimes|numeric',
-            'subject_id' => 'sometimes|string',
-            'type' => 'sometimes|in:cours,td,tp,supp',
-            'state' => 'sometimes|in:intern,extern',
-            'day' => 'sometimes|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-            'teacher_id' => 'sometimes|exists:teachers,id',
-        ]);
+{
+    $validatedData = $request->validate([
+        'start' => 'sometimes|date_format:H:i',
+        'end' => 'sometimes|date_format:H:i|after:start',
+        'subject_id' => 'sometimes|string',
+        'type' => 'sometimes|in:cours,td,tp,supp',
+        'state' => 'sometimes|in:intern,extern',
+        'day' => 'sometimes|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+    ]);
 
-        $lecture->update($request->all());
+    // Merge old + new data for accurate checking
+    $newDay = $validatedData['day'] ?? $lecture->day;
+    $newStart = $validatedData['start'] ?? $lecture->start;
+    $newEnd = $validatedData['end'] ?? $lecture->end;
 
-        return response()->json($lecture);
+    // Fetch all other lectures for the same teacher and day, excluding the current lecture
+    $existingLectures = Lecture::where('teacher_id', $lecture->teacher_id)
+        ->where('day', $newDay)
+        ->where('id', '!=', $lecture->id) // Exclude the current lecture
+        ->get(['id', 'start', 'end', 'day']);
+
+    foreach ($existingLectures as $existing) {
+        if ($this->timeRangesOverlap(
+            $newStart, $newEnd,
+            $existing->start, $existing->end
+        )) {
+            return response()->json([
+                'message' => 'Lecture conflicts with existing schedule',
+                'conflicts' => [
+                    'new_lecture' => [
+                        'start' => $newStart,
+                        'end' => $newEnd,
+                        'day' => $newDay,
+                    ],
+                    'existing_lecture' => $existing
+                ]
+            ], 422);
+        }
     }
+
+    // If no conflicts, update
+    $lecture->update($validatedData);
+
+    return response()->json($lecture);
+}
+
 
     public function destroy(Lecture $lecture)
     {
