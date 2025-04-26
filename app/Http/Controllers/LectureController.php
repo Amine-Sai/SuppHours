@@ -19,6 +19,14 @@ class LectureController extends Controller
                Carbon::parse($end1)->gt(Carbon::parse($start2));
     }
 
+    use Carbon\Carbon;
+    private function calculateDuration($start, $end): floatval
+        {
+        $start = Carbon::parse($lecture->start);
+        $end = Carbon::parse($lecture->end);
+        return $start->diffInMinutes($end) / 60;
+        }
+
 
     public function index()
     {
@@ -26,34 +34,79 @@ class LectureController extends Controller
     }
 
     public function calculateAdditionalHours(Request $request)
-    {
-        $lectures = $request->input('lectures'); // Assuming lectures are passed in the request
-        
-        // Define the lecture type values and processing order
-        $typeValues = [
-            'cours' => 1.5,
-            'td' => 1,
-            'tp' => 0.75
-        ];
-        
-        $totalHours = 0;
-        $supplementaryHours = 0;
-        $processedLectures = [];
-        
-        // Process lectures in the specified order: cours, td, tp
-        foreach (['cours', 'td', 'tp'] as $currentType) {
-            foreach ($lectures as $lecture) {
-                if ($lecture['type'] !== $currentType) {
-                    continue;
-                }
-                
-                $remainingDuration = $lecture['duration'];
-                
-                while ($remainingDuration > 0) {
-                    $availableSpace = 9 - $totalHours;
-                    
-                    if ($availableSpace <= 0) {
-                        // All remaining duration goes to supplementary
+{
+    $validated = $request->validate([
+        'teacher_id' => 'required|exists:teachers,id',  
+    ]);
+
+    $teacherId = $validated['teacher_id'];
+
+    // Fetch the teacher's lectures
+    $lectures = Lecture::where('teacher_id', $teacherId)->get();
+
+    // Define the lecture type values and processing order
+    $typeValues = [
+        'cours' => 1.5,
+        'td' => 1,
+        'tp' => 0.75
+    ];
+
+    $totalHours = 0;
+    $supplementaryHours = 0;
+    $processedLectures = [];
+
+    // Process lectures in the specified order: cours, td, tp
+    foreach (['cours', 'td', 'tp'] as $currentType) {
+        foreach ($lectures as $lecture) {
+            if ($lecture->type !== $currentType) {
+                continue;
+            }
+
+            // Calculate duration in hours
+            calculateDuration($lecture->start, $lecture->end);
+
+            $remainingDuration = $duration;
+
+            while ($remainingDuration > 0) {
+                $availableSpace = 9 - $totalHours;
+
+                if ($availableSpace <= 0) {
+                    // All remaining duration goes to supplementary
+                    $supplementaryHours += $remainingDuration;
+                    $processedLectures[] = [
+                        'original_lecture' => $lecture,
+                        'duration' => $remainingDuration,
+                        'type' => 'supp',
+                        'is_supplementary' => true
+                    ];
+                    $remainingDuration = 0;
+                } else {
+                    $typeValue = $typeValues[$currentType];
+                    $possibleDuration = min($remainingDuration, $availableSpace / $typeValue * $duration);
+
+                    if ($possibleDuration >= $remainingDuration) {
+                        // Entire duration fits
+                        $totalHours += $remainingDuration * $typeValue;
+                        $processedLectures[] = [
+                            'original_lecture' => $lecture,
+                            'duration' => $remainingDuration,
+                            'type' => $currentType,
+                            'is_supplementary' => false
+                        ];
+                        $remainingDuration = 0;
+                    } else {
+                        // Split the duration
+                        $totalHours += $possibleDuration * $typeValue;
+                        $processedLectures[] = [
+                            'original_lecture' => $lecture,
+                            'duration' => $possibleDuration,
+                            'type' => $currentType,
+                            'is_supplementary' => false
+                        ];
+
+                        $remainingDuration -= $possibleDuration;
+
+                        // The rest goes to supplementary
                         $supplementaryHours += $remainingDuration;
                         $processedLectures[] = [
                             'original_lecture' => $lecture,
@@ -62,68 +115,37 @@ class LectureController extends Controller
                             'is_supplementary' => true
                         ];
                         $remainingDuration = 0;
-                    } else {
-                        $typeValue = $typeValues[$currentType];
-                        $possibleDuration = min($remainingDuration, $availableSpace / $typeValue * $lecture['duration']);
-                        
-                        if ($possibleDuration >= $remainingDuration) {
-                            // Entire duration fits
-                            $totalHours += $remainingDuration * $typeValue;
-                            $processedLectures[] = [
-                                'original_lecture' => $lecture,
-                                'duration' => $remainingDuration,
-                                'type' => $currentType,
-                                'is_supplementary' => false
-                            ];
-                            $remainingDuration = 0;
-                        } else {
-                            // Split the duration
-                            $totalHours += $possibleDuration * $typeValue;
-                            $processedLectures[] = [
-                                'original_lecture' => $lecture,
-                                'duration' => $possibleDuration,
-                                'type' => $currentType,
-                                'is_supplementary' => false
-                            ];
-                            
-                            $remainingDuration -= $possibleDuration;
-                            
-                            // The rest goes to supplementary
-                            $supplementaryHours += $remainingDuration;
-                            $processedLectures[] = [
-                                'original_lecture' => $lecture,
-                                'duration' => $remainingDuration,
-                                'type' => 'supp',
-                                'is_supplementary' => true
-                            ];
-                            $remainingDuration = 0;
-                        }
                     }
                 }
             }
         }
-        
-        // Process any remaining lectures that might not have been processed
-        foreach ($lectures as $lecture) {
-            if (!in_array($lecture['type'], ['cours', 'td', 'tp'])) {
-                // These are automatically supplementary
-                $supplementaryHours += $lecture['duration'];
-                $processedLectures[] = [
-                    'original_lecture' => $lecture,
-                    'duration' => $lecture['duration'],
-                    'type' => 'supp',
-                    'is_supplementary' => true
-                ];
-            }
-        }
-        
-        return response()->json([
-            'total_hours' => $totalHours,
-            'supplementary_hours' => $supplementaryHours,
-            'processed_lectures' => $processedLectures,
-            'message' => 'Calculation completed successfully'
-        ]);
     }
+
+    // Handle any lectures that aren't cours/td/tp (auto supp)
+    foreach ($lectures as $lecture) {
+        if (!in_array($lecture->type, ['cours', 'td', 'tp'])) {
+            $start = Carbon::parse($lecture->start);
+            $end = Carbon::parse($lecture->end);
+            $duration = $start->diffInMinutes($end) / 60;
+
+            $supplementaryHours += $duration;
+            $processedLectures[] = [
+                'original_lecture' => $lecture,
+                'duration' => $duration,
+                'type' => 'supp',
+                'is_supplementary' => true
+            ];
+        }
+    }
+
+    return response()->json([
+        'total_hours' => $totalHours,
+        'supplementary_hours' => $supplementaryHours,
+        'processed_lectures' => $processedLectures,
+        'message' => 'Calculation completed successfully'
+    ]);
+}
+
 
 
     public function store(Request $request)
