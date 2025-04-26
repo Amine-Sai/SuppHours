@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Lecture;
+use App\Models\lecture;
 use Illuminate\Http\Request;
 
 class LectureController extends Controller
@@ -114,18 +114,19 @@ class LectureController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $data=$request->validate([
             'start' => 'required|date_format:H:i',
             'end' => 'required|date_format:H:i|after:start',
+            'duration' => 'required|numeric',
             'subject_id' => 'required|string',
             'type' => 'required|in:cours,td,tp,supp',
             'state' => 'required|in:intern,extern',
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'teacher_id' => 'required|exists:teachers,id',
         ]);
-
-        $lecture = Lecture::create($request->all());
-
+        //dd($data);
+        $lecture = Lecture::create($data);
+        
         return response()->json($lecture, 201);
     }
 
@@ -139,6 +140,7 @@ class LectureController extends Controller
         $request->validate([
             'start' => 'sometimes|date_format:H:i',
             'end' => 'sometimes|date_format:H:i|after:start',
+            'duration' => 'sometimes|numeric',
             'subject_id' => 'sometimes|string',
             'type' => 'sometimes|in:cours,td,tp,supp',
             'state' => 'sometimes|in:intern,extern',

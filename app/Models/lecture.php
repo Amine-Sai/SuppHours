@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class lecture extends Model
+class Lecture extends Model
 {
-    protected $fillable=['start', 'end','teacher_id', 'subject_id', 'day', 'state', 'type'];
+    use HasFactory;
+    public $timestamps = false;
+    protected $fillable=['start','end','duration','teacher_id', 'subject_id', 'day', 'state', 'type'];
 
     public function teacher(){
         return $this->belongsTo(Teacher::class);
