@@ -14,13 +14,15 @@ class TeacherController extends Controller
 
     public function store(Request $request)
     {
-        $data=$request->validate([
+        $data= $request->validate([
             'fullName' => 'required|string|max:255',
             'email' => 'required|email|unique:teachers,email',
         ]);
         
         $teacher = Teacher::create($data);
-        return response()->json($teacher, 201);
+        return response([
+            'teacher'=> $teacher,
+        ]);
     }
 
     public function show(teacher $teacher)
