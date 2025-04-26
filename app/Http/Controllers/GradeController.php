@@ -27,7 +27,9 @@ class GradeController extends Controller
         ]);
 
         $grade = Grade::create($validated);
-        return response()->json($grade, 201);
+        return response([
+            'message'=> "grade $grade->name created successfully",
+        ]);
     }
 
     /**
@@ -112,30 +114,7 @@ class GradeController extends Controller
             return strtotime($b['start_date']) - strtotime($a['start_date']);
         });
         
-        return response()->json($grades);
-    }
-    
-    /**
-     * Get a teacher's current grade
-     */
-    public function getCurrentGrade(Teacher $teacher)
-    {
-        $grades = $teacher->grades ?? [];
-        if (is_string($grades)) {
-            $grades = json_decode($grades, true) ?? [];
-        }
-        
-        if (empty($grades)) {
-            return response()->json(null);
-        }
-        
-        // Sort by start_date (newest first)
-        usort($grades, function($a, $b) {
-            return strtotime($b['start_date']) - strtotime($a['start_date']);
-        });
-        
-        // Current grade is the most recent one
-        return response()->json($grades[0]);
+        return response(["grades" => $grades]);
     }
     
     /**
