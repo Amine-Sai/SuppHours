@@ -105,13 +105,19 @@ class LectureController extends Controller
             'teacher_id' => 'required|exists:teachers,id',
             'lectures' => 'required|array|min:1',
             'lectures.*.start' => 'required|date_format:H:i',
-            'lectures.*.end' => 'required|date_format:H:i|after:lectures.*.start',
+            'lectures.*.end' => 'required|date_format:H:i',
             'lectures.*.subject_id' => 'required|string',
             'lectures.*.type' => 'required|in:cours,td,tp,supp',
             'lectures.*.state' => 'required|in:intern,extern',
             'lectures.*.day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
         ]);
-    
+        foreach ($request->input('lectures') as $index => $lecture) {
+            if ($lecture['end'] <= $lecture['start']) {
+                return response()->json([
+                    'message' => "Lecture at index $index has an end time before or equal to start time."
+                ], 422);
+            }
+        }
         $teacherId = $validated['teacher_id'];
         $newLectures = $validated['lectures'];
     
@@ -184,7 +190,13 @@ class LectureController extends Controller
         'state' => 'sometimes|in:intern,extern',
         'day' => 'sometimes|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
     ]);
-
+    if (isset($validatedData['start']) && isset($validatedData['end'])) {
+        if ($validatedData['end'] <= $validatedData['start']) {
+            return response()->json([
+                'message' => 'End time must be after start time.'
+            ], 422);
+        }
+    }
     // Merge old + new data for accurate checking
     $newDay = $validatedData['day'] ?? $lecture->day;
     $newStart = $validatedData['start'] ?? $lecture->start;

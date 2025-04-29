@@ -17,6 +17,7 @@ class TeacherController extends Controller
         $data= $request->validate([
             'fullName' => 'required|string|max:255',
             'email' => 'required|email|unique:teachers,email',
+            'isVacataire'=>'required',
         ]);
         
         $teacher = Teacher::create($data);
@@ -34,6 +35,7 @@ class TeacherController extends Controller
     {
         // Validate the incoming data, ensuring current email is excluded from uniqueness check
         $data = $request->validate([
+            'isVacataire'=>'required',
             'fullName' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:teachers,email,' . $teacher->id,
         ]);
