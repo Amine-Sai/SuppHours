@@ -77,7 +77,7 @@ class LectureController extends Controller
                         $valuexduration = $typeValue * $remainingDuration;
                         $possibleDuration = min($availableSpace, $valuexduration);
 
-                        if ($availableSpace >= $valuexduration) { // cond espace
+                        if ($availableSpace >= $valuexduration) { 
                             $totalHours += $valuexduration;
                             $remainingDuration = 0;
                         } else {
@@ -110,14 +110,14 @@ class LectureController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'teacher_id' => 'required|exists:teachers,id',
             // 'lectures' => 'required|array|min:1',
-            'lectures.start' => 'required|date_format:H:i',
-            'lectures.end' => 'required|date_format:H:i',
-            'lectures.subject_id' => 'required|string',
-            'lectures.type' => 'required|in:cours,td,tp,supp',
-            'lectures.state' => 'required|in:intern,extern',
-            'lectures.day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+            'teacher_id' => 'required|exists:teachers,id',
+            'start' => 'required|date_format:H:i',
+            'end' => 'required|date_format:H:i',
+            'subject' => 'required|string',
+            'type' => 'required|in:cours,td,tp,supp',
+            'state' => 'required|in:intern,extern',
+            'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
         ]);
         // foreach ($request->input('lectures') as $index => $lecture) {
             if ($lecture['end'] <= $lecture['start']) {
@@ -192,45 +192,40 @@ class LectureController extends Controller
     $validatedData = $request->validate([
         'start' => 'sometimes|date_format:H:i',
         'end' => 'sometimes|date_format:H:i|after:start',
-        'subject_id' => 'sometimes|string',
+        'subject' => 'sometimes|string',
         'type' => 'sometimes|in:cours,td,tp,supp',
         'state' => 'sometimes|in:intern,extern',
         'day' => 'sometimes|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
     ]);
-    if (isset($validatedData['start']) && isset($validatedData['end'])) {
         if ($validatedData['end'] <= $validatedData['start']) {
             return response()->json([
                 'message' => 'End time must be after start time.'
             ], 422);
         }
-    }
-    $newDay = $validatedData['day'] ?? $lecture->day;
-    $newStart = $validatedData['start'] ?? $lecture->start;
-    $newEnd = $validatedData['end'] ?? $lecture->end;
 
-    $existingLectures = Lecture::where('teacher_id', $lecture->teacher_id)
-        ->where('day', $newDay)
-        ->where('id', '!=', $lecture->id) 
-        ->get(['id', 'start', 'end', 'day']);
+    // $existingLectures = Lecture::where('teacher_id', $lecture->teacher_id)
+    //     ->where('day', $lecture->day)
+    //     ->where('id', '!=', $lecture->id) 
+    //     ->get(['id', 'start', 'end', 'day']);
 
-    foreach ($existingLectures as $existing) {
-        if ($this->timeRangesOverlap(
-            $newStart, $newEnd,
-            $existing->start, $existing->end
-        )) {
-            return response()->json([
-                'message' => 'Lecture conflicts with existing schedule',
-                'conflicts' => [
-                    'new_lecture' => [
-                        'start' => $newStart,
-                        'end' => $newEnd,
-                        'day' => $newDay,
-                    ],
-                    'existing_lecture' => $existing
-                ]
-            ], 422);
-        }
-    }
+    // foreach ($existingLectures as $existing) {
+    //     if ($this->timeRangesOverlap(
+    //         $lecture->start, $lecture->end,
+    //         $existing->start, $existing->end
+    //     )) {
+    //         return response()->json([
+    //             'message' => 'Lecture conflicts with existing schedule',
+    //             'conflicts' => [
+    //                 'new_lecture' => [
+    //                     'start' => $lecture->start,
+    //                     'end' => $lecture->end,
+    //                     'day' => $newDay,
+    //                 ],
+    //                 'existing_lecture' => $existing
+    //             ]
+    //         ], 422);
+    //     }
+    // }
 
     $lecture->update($validatedData);
 
