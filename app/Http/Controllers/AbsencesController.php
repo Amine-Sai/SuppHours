@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Absence;
-use App\Models\Teacher;
+use App\Models\absences;
+use App\Models\teacher;
 use App\Models\Lecture;
 use App\Models\Holidays;
 use Illuminate\Http\Request;
@@ -27,7 +27,7 @@ class AbsencesController extends Controller
             'lecture_id'  => 'required|exists:lectures,id',
         ]);
 
-        $absence = Absence::create([
+        $absence = Absences::create([
             'justified'   => $request->justified,
             'date'        => $request->date,
             'teacher_id'  => $request->teacher_id,
@@ -37,9 +37,9 @@ class AbsencesController extends Controller
         return response()->json($absence, 201);
     }
 
-    public function show(Absence $absence)
+    public function show(Teacher $teacher)
     {
-        return response()->json($absence);
+        return response()->json($teacher->absences);
     }
 
     public function update(Absence $absence, Request $request)

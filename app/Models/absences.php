@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-// use OpenApi\Annotations as OA;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
-class Absence extends Model
+class Absences extends Model
 {
-    protected $fillable = ['date', 'justified', 'teacher_id', 'lecture_id', 'start', 'end'];
+    protected $fillable = ['date', 'justified', 'teacher_id', 'lecture_id'];
     
-    protected $hidden = ['teacher_id', 'lecture_id'];
 
     public function teacher()
     {
