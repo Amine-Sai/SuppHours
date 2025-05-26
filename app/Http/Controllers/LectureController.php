@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\lecture;
+use App\Models\Teacher;
+
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
