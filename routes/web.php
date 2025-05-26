@@ -7,6 +7,7 @@ use App\Http\Controllers\AbsencesController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\LectureController;
+use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\PeriodController;
 
 
