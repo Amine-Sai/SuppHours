@@ -10,8 +10,7 @@ database/*.sqlite3
 bootstrap/cache/
 storage/logs/
 storage/framework/
-/vendor
-.env
+# /vendor
 .env.backup
 .env.production
 .phpactor.json
@@ -23,6 +22,7 @@ yarn-error.log
 /auth.json
 /.fleet
 /.idea
+.env
 /.nova
 /.vscode
 /.zed
