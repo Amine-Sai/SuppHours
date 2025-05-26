@@ -44,17 +44,17 @@ class AuthController extends Controller
 
         $user = User::create($data);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // $token = $user->createToken('auth_token')->plainTextToken;
 
         return response([
             'user' => $user,
-            'token' => $token,
+            // 'token' => $token,
         ], 201);
     }
 
     public function logout()
     {
-        auth()->user()->tokens()->delete(); // Delete all tokens
+        auth()->user()->tokens()->delete(); 
 
         return response()->json([
             'status' => true,
