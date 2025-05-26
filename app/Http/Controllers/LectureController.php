@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\lecture;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 
 class LectureController extends Controller
 {
     // time overlap
-    use Carbon\Carbon;
     private function timeRangesOverlap($start1, $end1, $start2, $end2): bool
     {
         return Carbon::parse($start1)->lt(Carbon::parse($end2)) && 
@@ -109,7 +109,7 @@ class LectureController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $lecture = $request->validate([
             // 'lectures' => 'required|array|min:1',
             'teacher_id' => 'required|exists:teachers,id',
             'start' => 'required|date_format:H:i',
@@ -120,11 +120,11 @@ class LectureController extends Controller
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
         ]);
         // foreach ($request->input('lectures') as $index => $lecture) {
-            if ($lecture['end'] <= $lecture['start']) {
-                return response()->json([
-                    'message' => "Lecture at index $index has an end time before or equal to start time."
-                ], 422);
-            };
+            // if ($lecture['end'] <= $lecture['start']) {
+            //     return response()->json([
+            //         'message' => "Lecture at index $index has an end time before or equal to start time."
+            //     ], 422);
+            // };
         // }
         // $teacherId = $validated['teacher_id'];
         // $newLectures = $validated['lectures'];
