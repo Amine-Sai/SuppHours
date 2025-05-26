@@ -121,6 +121,7 @@ class LectureController extends Controller
         $lecture = $request->validate([
             // 'lectures' => 'required|array|min:1',
             'teacher_id' => 'required|exists:teachers,id',
+            'timetable_id' => 'required|exists:timetable,id',
             'start' => 'required|date_format:H:i',
             'end' => 'required|date_format:H:i',
             'subject' => 'required|string',
@@ -128,6 +129,16 @@ class LectureController extends Controller
             'state' => 'required|in:intern,extern',
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
         ]);
+
+
+        $latestTimetable = Timetable::latest()->first();
+        if (!$latestTimetable) {
+            return response()->json([
+                'message' => 'No timetables found in the system, create a time table then try again.',
+            ], 404);
+        };
+        $lecture[timetable_id] = $latestTimetable->id;
+        
         // foreach ($request->input('lectures') as $index => $lecture) {
             // if ($lecture['end'] <= $lecture['start']) {
             //     return response()->json([
