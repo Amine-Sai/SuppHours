@@ -67,6 +67,7 @@ class GradeController extends Controller
         $validated = $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
             'grade_id' => 'required|exists:grades,id',
+            'start_date'=>'required'
         ]);
         
         $teacher = Teacher::findOrFail($validated['teacher_id']);
@@ -78,7 +79,7 @@ class GradeController extends Controller
         
         $grades[] = [
             'grade_id' => $validated['grade_id'],
-            'start_date' => now()
+            'start_date' => $validated['start_date'],
         ];
         
         usort($grades, function($a, $b) {
