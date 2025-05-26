@@ -67,24 +67,20 @@ class GradeController extends Controller
         $validated = $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
             'grade_id' => 'required|exists:grades,id',
-            'start_date' => 'required|date',
         ]);
         
         $teacher = Teacher::findOrFail($validated['teacher_id']);
         
-        // Get current grades
         $grades = $teacher->grades ?? [];
         if (is_string($grades)) {
             $grades = json_decode($grades, true) ?? [];
         }
         
-        // Add new grade entry
         $grades[] = [
             'grade_id' => $validated['grade_id'],
-            'start_date' => $validated['start_date'],
+            'start_date' => now()
         ];
         
-        // Sort by start_date (newest first)
         usort($grades, function($a, $b) {
             return strtotime($b['start_date']) - strtotime($a['start_date']);
         });
@@ -95,9 +91,6 @@ class GradeController extends Controller
         return response()->json($teacher);
     }
     
-    /**
-     * Get a teacher's grades history
-     */
     public function getTeacherGrades(Teacher $teacher)
     {
         $grades = $teacher->grades ?? [];
@@ -119,7 +112,6 @@ class GradeController extends Controller
         $validated = $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
             'grade_id' => 'required|exists:grades,id',
-            'start_date' => 'required|date',
         ]);
         
         $teacher = Teacher::findOrFail($validated['teacher_id']);
@@ -130,11 +122,10 @@ class GradeController extends Controller
         }
         
         $filteredGrades = array_filter($grades, function($grade) use ($validated) {
-            return !($grade['grade_id'] == $validated['grade_id'] && 
-                    $grade['start_date'] == $validated['start_date']);
+            return !($grade['grade_id'] == $validated['grade_id'] );
         });
         
-        $teacher->grades = array_values($filteredGrades); // Reset array keys
+        $teacher->grades = array_values($filteredGrades);
         $teacher->save();
         
         return response()->json($teacher);

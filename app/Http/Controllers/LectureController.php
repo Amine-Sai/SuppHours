@@ -204,15 +204,13 @@ class LectureController extends Controller
             ], 422);
         }
     }
-    // Merge old + new data for accurate checking
     $newDay = $validatedData['day'] ?? $lecture->day;
     $newStart = $validatedData['start'] ?? $lecture->start;
     $newEnd = $validatedData['end'] ?? $lecture->end;
 
-    // Fetch all other lectures for the same teacher and day, excluding the current lecture
     $existingLectures = Lecture::where('teacher_id', $lecture->teacher_id)
         ->where('day', $newDay)
-        ->where('id', '!=', $lecture->id) // Exclude the current lecture
+        ->where('id', '!=', $lecture->id) 
         ->get(['id', 'start', 'end', 'day']);
 
     foreach ($existingLectures as $existing) {
@@ -234,7 +232,6 @@ class LectureController extends Controller
         }
     }
 
-    // If no conflicts, update
     $lecture->update($validatedData);
 
     return response()->json($lecture);

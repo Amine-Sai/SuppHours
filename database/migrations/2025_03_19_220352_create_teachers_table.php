@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $casts = [
+    'grades' => 'json',
+];
     public function up(): void
     {
         Schema::create('teachers', function(Blueprint $table) {
@@ -18,6 +21,7 @@ return new class extends Migration
             $table->timestamps();
         });
     }
+    
 
     public function down(): void
     {
