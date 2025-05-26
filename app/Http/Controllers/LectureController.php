@@ -36,6 +36,14 @@ class LectureController extends Controller
         ]);
 
         $teacherId = $validated['teacher_id'];
+        $teacher = Teacher:: where('id', $teacherId)->get();
+        if ($teacher->isVacateur) {
+            foreach ($lectures as $lecture) {
+                $lecture->type = "supp";
+                $lecture->save();
+            }
+            return response()->json(201);
+        }
         $lectures = Lecture::where('teacher_id', $teacherId)->get();
 
         // valeurs d sway3
@@ -103,75 +111,74 @@ class LectureController extends Controller
     {
         $validated = $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
-            'lectures' => 'required|array|min:1',
-            'lectures.*.start' => 'required|date_format:H:i',
-            'lectures.*.end' => 'required|date_format:H:i',
-            'lectures.*.subject_id' => 'required|string',
-            'lectures.*.type' => 'required|in:cours,td,tp,supp',
-            'lectures.*.state' => 'required|in:intern,extern',
-            'lectures.*.day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+            // 'lectures' => 'required|array|min:1',
+            'lectures.start' => 'required|date_format:H:i',
+            'lectures.end' => 'required|date_format:H:i',
+            'lectures.subject_id' => 'required|string',
+            'lectures.type' => 'required|in:cours,td,tp,supp',
+            'lectures.state' => 'required|in:intern,extern',
+            'lectures.day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
         ]);
-        foreach ($request->input('lectures') as $index => $lecture) {
+        // foreach ($request->input('lectures') as $index => $lecture) {
             if ($lecture['end'] <= $lecture['start']) {
                 return response()->json([
                     'message' => "Lecture at index $index has an end time before or equal to start time."
                 ], 422);
-            }
-        }
-        $teacherId = $validated['teacher_id'];
-        $newLectures = $validated['lectures'];
-    
-        $existingLectures = Lecture::where('teacher_id', $teacherId)
-            ->get(['id', 'day', 'start', 'end']);
+            };
+        // }
+        // $teacherId = $validated['teacher_id'];
+        // $newLectures = $validated['lectures'];
     
         // check overlaps
-        foreach ($newLectures as $i => $lectureA) {
-            foreach ($newLectures as $j => $lectureB) {
-                if ($i >= $j) continue; 
+        // $existingLectures = Lecture::where('teacher_id', $teacherId)
+        //     ->get(['id', 'day', 'start', 'end']);
     
-                if ($lectureA['day'] === $lectureB['day'] && 
-                    $this->timeRangesOverlap(
-                        $lectureA['start'], $lectureA['end'],
-                        $lectureB['start'], $lectureB['end']
-                    )) {
-                    return response()->json([
-                        'message' => 'Conflict between new lectures',
-                        'conflicts' => [
-                            'lecture_1' => $lectureA,
-                            'lecture_2' => $lectureB
-                        ]
-                    ], 422);
-                }
-            }
-        }
+        // foreach ($newLectures as $i => $lectureA) {
+        //     foreach ($newLectures as $j => $lectureB) {
+        //         if ($i >= $j) continue; 
     
-        // existing  & new
-        foreach ($newLectures as $newLecture) {
-            foreach ($existingLectures as $existing) {
-                if ($newLecture['day'] === $existing->day && 
-                    $this->timeRangesOverlap(
-                        $newLecture['start'], $newLecture['end'],
-                        $existing->start, $existing->end
-                    )) {
-                    return response()->json([
-                        'message' => 'Lecture conflicts with existing schedule',
-                        'conflicts' => [
-                            'new_lecture' => $newLecture,
-                            'existing_lecture' => $existing
-                        ]
-                    ], 422);
-                }
-            }
-        }
+        //         if ($lectureA['day'] === $lectureB['day'] && 
+        //             $this->timeRangesOverlap(
+        //                 $lectureA['start'], $lectureA['end'],
+        //                 $lectureB['start'], $lectureB['end']
+        //             )) {
+        //             return response()->json([
+        //                 'message' => 'Conflict between new lectures',
+        //                 'conflicts' => [
+        //                     'lecture_1' => $lectureA,
+        //                     'lecture_2' => $lectureB
+        //                 ]
+        //             ], 422);
+        //         }
+        //     }
+        // }
     
-        // Create all lectures if no conflicts
-        $createdLectures = [];
-        foreach ($newLectures as $lecture) {
-            $lecture['teacher_id'] = $teacherId; 
-            $createdLectures[] = Lecture::create($lecture);
-        }
+        // // existing  & new
+        // foreach ($newLectures as $newLecture) {
+        //     foreach ($existingLectures as $existing) {
+        //         if ($newLecture['day'] === $existing->day && 
+        //             $this->timeRangesOverlap(
+        //                 $newLecture['start'], $newLecture['end'],
+        //                 $existing->start, $existing->end
+        //             )) {
+        //             return response()->json([
+        //                 'message' => 'Lecture conflicts with existing schedule',
+        //                 'conflicts' => [
+        //                     'new_lecture' => $newLecture,
+        //                     'existing_lecture' => $existing
+        //                 ]
+        //             ], 422);
+        //         }
+        //     }
+        // }
     
-        return response()->json($createdLectures, 201);
+        // foreach ($newLectures as $lecture) {
+        //     $lecture['teacher_id'] = $teacherId; 
+        //     $createdLectures[] = 
+            Lecture::create($lecture);
+        // }
+    
+        return response()->json(201);
     }
     
 

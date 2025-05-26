@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('fullName');
             $table->string('email');
-            
+            $table->boolval('isVacateur');
             // each object will contain: grade_id , start_date
             $table->json('grades')->nullable();
             $table->timestamps();
