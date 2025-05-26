@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Teacher extends Model
 {
     use HasFactory;
-    protected $fillable=['fullName','email','type'];
-    protected $casts = ['grades' => 'array'];
-    function grades(){
-        return $this->hasMany(Grade::class);
-    }
+    protected $fillable=['fullName','email','isVacateur'];
+    protected $casts = ['grades' => 'json'];
+    // function grades(){
+    //     return $this->hasMany(Grade::class);
+    // }
 
     public function absences()
     {
