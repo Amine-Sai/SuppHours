@@ -20,6 +20,7 @@ return new class extends Migration
             $table->enum('state', ['intern', 'extern']);
             $table->enum('day', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
             $table->foreignId('teacher_id')->constrained()->onDelete('cascade');
+            $table->foreignId('timetable_id')->constrained()->onDelete('cascade');
         });
     }
 
