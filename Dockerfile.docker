@@ -1,0 +1,29 @@
+# Dockerfile
+FROM php:8.2-apache
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    git unzip curl libzip-dev zip \
+    && docker-php-ext-install zip pdo pdo_mysql
+
+# Enable Apache Rewrite Module
+RUN a2enmod rewrite
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy app source
+COPY . /var/www/html
+
+# Install PHP dependencies
+RUN composer install --optimize-autoloader --no-dev
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage
+
+# Expose port 80 (Apache default)
+EXPOSE 80
