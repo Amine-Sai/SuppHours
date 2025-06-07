@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\lecture;
+use App\Models\Lecture;
 use App\Models\Teacher;
+use App\Models\Timetable;
+
 
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -33,95 +35,93 @@ class LectureController extends Controller
     //     return response()->json(Lecture::where('id', $data->teacher_id));
     // }
 
-    public function calculateAdditionalHours(Request $request){
-        $data = $request->validate(['teacher_id'=> 'required|exists:teachers,id',]);
-        $latestTimetable = Timetable::latest()->first();
-        if (!$latestTimetable) {
-            return response()->json([
-                'message' => 'No timetables found in the system.',
-                'lectures' => []
-            ], 404);
+ public function calculateAdditionalHours(Request $request)
+{
+    $data = $request->validate(['teacher_id' => 'required|exists:teachers,id']);
+    $teacherId = $data['teacher_id'];
+    $latestTimetable = Timetable::latest()->first();
+
+    if (!$latestTimetable) {
+        return response()->json([
+            'message' => 'No timetables found in the system.',
+            'lectures' => []
+        ], 404);
+    }
+
+    $teacher = Teacher::where('id', $teacherId)->first();
+
+    if (!$teacher) {
+        return response()->json([
+            'message' => 'Teacher not found.'
+        ], 404);
+    }
+
+    $lectures = Lecture::where('teacher_id', $teacherId)
+                       ->where('timetable_id', $latestTimetable->id)
+                       ->orderBy('start') // Order by start time to process chronologically
+                       ->get();
+
+    if ($teacher->isVacateur) {
+        foreach ($lectures as $lecture) {
+            $lecture->type = "supp";
+            $lecture->save();
         }
-        $lectures = Lecture::where('teacher_id', $validated['teacher_id'])
-                           ->where('timetable_id', $latestTimetable->id)
-                           ->get();
-        $teacher = Teacher:: where('id', $teacherId)->get();
-        if ($teacher->isVacateur) {
-            foreach ($lectures as $lecture) {
-                $lecture->type = "supp";
-                $lecture->save();
-            }
-            return response()->json(201);
+        return response()->json([
+            'message' => 'All lectures set to supplementary for vacateur teacher.'
+        ], 200);
+    }
+
+    $typeValues = [
+        'cours' => 1.5,
+        'td'    => 1,
+        'tp'    => 0.75,
+    ];
+
+    $totalHours = 0;
+
+    foreach ($lectures as $lecture) {
+        $remainingLectureDuration = $this->calculateDuration($lecture->start, $lecture->end);
+
+        if ($totalHours >= 9) {
+            $lecture->type = "supp";
+            $lecture->save();
+            continue;
         }
-        // $lectures = Lecture::where('teacher_id', $teacherId)->get();
 
-        // valeurs d sway3
-        $typeValues = [
-            'cours' => 1.5,
-            'td'    => 1,
-            'tp'    => 0.75,
-        ];
+        $availableSpace = 9 - $totalHours;
+        $typeValue = $typeValues[$lecture->type];
+        $possibleDuration = min($availableSpace, $typeValue * $remainingLectureDuration) / $typeValue; 
 
-        $totalHours = 0;
+        if ($availableSpace >= $typeValue * $remainingLectureDuration) {
+            $totalHours += $typeValue * $remainingLectureDuration;
+        } else {
+            $totalHours += $availableSpace;
 
-        // cours -> td -> tp
-        foreach (['cours', 'td', 'tp'] as $currentType) {
-            foreach ($lectures as $lecture) {
-                if ($lecture->type !== $currentType) {
-                    continue;
-                }
+            $firstPartEnd = Carbon::parse($lecture->start)->addHours($possibleDuration)->format('H:i');
+            $secondPartStart = $firstPartEnd;
+            $secondPartEnd = $lecture->end;
 
-                $remainingDuration = $this->calculateDuration($lecture->start, $lecture->end);
+            $lecture->end = $firstPartEnd;
+            $lecture->save();
 
-                while ($remainingDuration > 0) {
-                    $availableSpace = 9 - $totalHours;
-
-                    if ($availableSpace <= 0) {
-                        // all remaining duration goes to supplementary
-                        $lecture->type = "supp";
-                        $lecture->save();
-                        $remainingDuration = 0;
-                    } else {
-                        $typeValue = $typeValues[$currentType];
-                        $valuexduration = $typeValue * $remainingDuration;
-                        $possibleDuration = min($availableSpace, $valuexduration);
-
-                        if ($availableSpace >= $valuexduration) { 
-                            $totalHours += $valuexduration;
-                            $remainingDuration = 0;
-                        } else {
-                            // split the duration
-                            $firstSplitDuration = $availableSpace / $typeValue;
-
-                            $totalHours += $availableSpace;
-
-                            // split into 2 parts, bdel end ta3 lwla based on remaining time
-                            $newEnd = Carbon::parse($lecture->start)->addHours($firstSplitDuration);
-                            $lecture->end = $newEnd->format('H:i');
-                            $lecture->save();
-
-                            // nos 2eme ta3 sceance
-                            $secondHalf = $lecture->replicate();
-                            $secondHalf->start = $lecture->end;
-                            $secondHalf->end = $newEnd->addHours($remainingDuration - $firstSplitDuration)->format('H:i');
-                            $secondHalf->type = "supp";
-                            $secondHalf->save();
-
-                            $remainingDuration = 0;
-                        }
-                    }
-                }
-            }
+            $newLecture = $lecture->replicate();
+            $newLecture->start = $secondPartStart;
+            $newLecture->end = $secondPartEnd;
+            $newLecture->type = "supp";
+            $newLecture->save();
         }
+    }
+
+    return response()->json([
+        'message' => 'Additional hours calculated and lectures updated.'
+    ], 200);
 }
-
 
     public function store(Request $request)
     {
         $lecture = $request->validate([
-            // 'lectures' => 'required|array|min:1',
             'teacher_id' => 'required|exists:teachers,id',
-            'timetable_id' => 'required|exists:timetable,id',
+            'timetable_id' => 'required|exists:timetables,id',
             'start' => 'required|date_format:H:i',
             'end' => 'required|date_format:H:i',
             'subject' => 'required|string',
@@ -131,13 +131,14 @@ class LectureController extends Controller
         ]);
 
 
-        $latestTimetable = Timetable::latest()->first();
-        if (!$latestTimetable) {
-            return response()->json([
-                'message' => 'No timetables found in the system, create a time table then try again.',
-            ], 404);
-        };
-        $lecture[timetable_id] = $latestTimetable->id;
+        // $latestTimetable = Timetable::latest()->first();
+        // if (!$latestTimetable) {
+        //     return response()->json([
+        //         'message' => 'No timetables found in the system, create a time table then try again.',
+        //     ], 404);
+        // };
+        // $lecture[timetable_id] = $latestTimetable->id;
+        
         
         // foreach ($request->input('lectures') as $index => $lecture) {
             // if ($lecture['end'] <= $lecture['start']) {
@@ -195,7 +196,7 @@ class LectureController extends Controller
         // foreach ($newLectures as $lecture) {
         //     $lecture['teacher_id'] = $teacherId; 
         //     $createdLectures[] = 
-            Lecture::create($lecture);
+        Lecture::create($lecture);
         // }
     
         return response()->json(201);
@@ -206,6 +207,16 @@ class LectureController extends Controller
     {
         return response()->json($lecture);
     }
+    public function getTeacherTimeTable(Teacher $teacher, Timetable $timetable)
+    {
+        $lectures = Lecture::where('teacher_id', $teacher->id)
+                    ->where('timetable_id', $timetable->id)
+                    ->get();
+
+        return response()->json($lectures);
+    }
+
+
 
     public function update(Request $request, Lecture $lecture)
 {

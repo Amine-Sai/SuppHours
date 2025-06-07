@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\absences;
-use App\Models\teacher;
+use App\Models\Absences;
+use App\Models\Teacher;
 use App\Models\Lecture;
 use App\Models\Holidays;
 use Illuminate\Http\Request;
@@ -15,13 +15,14 @@ class AbsencesController extends Controller
 
     public function index()
     {
-        return response()->json(Absence::all());
+        return response()->json(Absences::all());
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'justified'   => 'sometimes|boolean',
+            'reason' => 'sometimes|string',
             'date'        => 'required|date',
             'teacher_id'  => 'required|exists:teachers,id',
             'lecture_id'  => 'required|exists:lectures,id',
@@ -30,6 +31,7 @@ class AbsencesController extends Controller
         $absence = Absences::create([
             'justified'   => $request->justified,
             'date'        => $request->date,
+            'reason' =>$request->reason,
             'teacher_id'  => $request->teacher_id,
             'lecture_id'  => $request->lecture_id,
         ]);
@@ -42,7 +44,7 @@ class AbsencesController extends Controller
         return response()->json($teacher->absences);
     }
 
-    public function update(Absence $absence, Request $request)
+    public function update(Absences $absence, Request $request)
     {
         $request->validate([
             'id' => 'required|exists:absences,id',
@@ -57,7 +59,7 @@ class AbsencesController extends Controller
         return response()->json($absence);
     }
 
-    public function destroy(Absence $absence)
+    public function destroy(Absences $absence)
     {
         $absence->delete();
         return response()->json(['message' => 'Absence deleted successfully']);

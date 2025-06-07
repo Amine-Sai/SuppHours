@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\timetable;
+use App\Models\Timetable;
 use Illuminate\Http\Request;
 
 class TimetableController extends Controller
 {
 
-    public function index(Teacher $teacher)
+    public function index()
 {
+    $timetables = Timetable::all();
+
     return response()->json([
-        'Time Tables' => $teacher->timetable
+        'Time Tables' => $timetables
     ]);
 } 
 
@@ -28,25 +30,6 @@ class TimetableController extends Controller
         ]);
     }
 
-    public function show(Timetable $timetable)
-    {
-        $data = $request->validate(['teacher_id'=> 'required|exists:teachers,id',]);
-        $latestTimetable = Timetable::latest()->first();
-        if (!$latestTimetable) {
-            return response()->json([
-                'message' => 'No timetables found in the system.',
-                'lectures' => []
-            ], 404);
-        }
-        $lectures = Lecture::where('teacher_id', $validated['teacher_id'])
-                           ->where('timetable_id', $latestTimetable->id)
-                           ->get(); 
-        return response()->json([
-            'message' => 'Lectures for teacher found in the latest timetable.',
-            'time table' =>$latestTimetable,
-            'lectures' => $lectures
-        ]);
-    }
 
     public function update(Request $request, Timetable $timetable)
     {

@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\holidays;
+use App\Models\Holiday;
 use Illuminate\Http\Request;
 
 class HolidaysController extends Controller
 {
     /**
-     * Display a listing of the holidays.
+     * Display a listing of the holiday.
      */
     public function index()
     {
-        return response()->json(holidays::all());
+        return response()->json(Holiday::all());
     }
 
     /**
@@ -25,7 +25,7 @@ class HolidaysController extends Controller
             'duration' => 'required|integer',
         ]);
 
-        $holiday = holidays::create($validated);
+        $holiday = Holiday::create($validated);
         return response()->json($holiday, 201);
     }
 
