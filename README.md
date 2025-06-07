@@ -28,8 +28,8 @@
           <li><strong>Nombre des heures</strong> (number of hours)</li>
           <li><strong>Montant total</strong> (total amount)</li>
           <li><strong>Sécurité sociale</strong> (social security)</li>
-          <li><strong>Montant net</strong> (net amount)</li>
           <li><strong>IRG</strong> (income tax)</li>
+          <li><strong>Montant net</strong> (net amount)</li>
         </ul>
       </li>
       <li>Export results to <strong>PDF</strong> and <strong>Excel</strong> formats for reporting or payroll use.</li>
